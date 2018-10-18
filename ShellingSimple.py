@@ -8,12 +8,15 @@ This is a temporary script file.
 import numpy as np
 import matplotlib.pyplot as plt
 
-N = 200  # Dimensions of the landscape
-Nt = 30 # Number of time steps
+N = 100  # Dimensions of the landscape
+Nt = 500 # Number of time steps
+Nplot = 20 # Interval for plotting world
+
+strict_neighbor = False # A flag about whether to include empty space as dissimilar
 
 f_empty = 0.3 # Fraction of space left empty
 f_diff  = 0.4 # Fraction of neighborhood diversity above which someone is uncomfortable
-f_move  = 0.2 # Fraction of uncomfortable players allowed to move
+f_move  = 0.3 # Fraction of uncomfortable players allowed to move
  
 Red_const = 1.0 # Constant for red players
 Blue_const = -1.0 # Constant for blue players
@@ -41,7 +44,7 @@ div_blue = np.zeros((N_blue,))
 
 for t in np.arange(Nt,dtype=int):
 
-    if (t % 5) == 0:
+    if (t % Nplot) == 0:
         plt.figure(figsize=(8,8))
         plt.title('World at time t = '+str(t),fontsize=16)
         plt.imshow(World,animated=True)
@@ -77,10 +80,17 @@ for t in np.arange(Nt,dtype=int):
             
         Neighborhood = World[start_row:(end_row + 1),start_col:(end_col + 1)]
 
-        if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
-            div_red[i] = 0.0
+
+        if(strict_neighbor):
+            if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
+                div_red[i] = 1.0
+            else:
+                div_red[i] = np.sum(Neighborhood == Blue_const) / (np.sum(~np.isnan(Neighborhood)) - 1.0)
         else:
-            div_red[i] = np.sum(Neighborhood == Blue_const) / (np.sum(~np.isnan(Neighborhood)) - 1.0)
+            if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
+                div_red[i] = 0.0
+            else:
+                div_red[i] = np.sum(Neighborhood == Blue_const) / np.min([Neighborhood.size,8])
         
     
     # Get the 8-way diversity metric neighborhood measure for BLUE players
@@ -107,10 +117,16 @@ for t in np.arange(Nt,dtype=int):
             
         Neighborhood = World[start_row:(end_row + 1),start_col:(end_col + 1)]
 
-        if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
-            div_blue[j] = 0.0
+        if(strict_neighbor):
+            if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
+                div_blue[j] = 1.0
+            else:
+                div_blue[j] = np.sum(Neighborhood == Red_const) / (np.sum(~np.isnan(Neighborhood)) - 1.0)
         else:
-            div_blue[j] = np.sum(Neighborhood == Red_const) / (np.sum(~np.isnan(Neighborhood)) - 1.0)
+            if(np.sum(~np.isnan(Neighborhood))==1): # If surrounded by empty space
+                div_blue[j] = 0.0
+            else:
+                div_blue[j] = np.sum(Neighborhood == Red_const) / np.min([Neighborhood.size,8])
     
         
     # Get the locations of those RED players that are uncomfortable    
